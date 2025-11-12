@@ -1,5 +1,5 @@
 "use client";
-import Com from "@/app/Com";
+import Com from "@/app/Header";
 // import Header from "@/app/Header";
 import ProductForm from "../ProductForm";
 import { Product } from "../types";
@@ -24,7 +24,7 @@ return (
       <h1 className="text-2xl font-bold">Add New Product</h1>
       
     </div>
-  <Com/>
+ 
 
     <ProductForm onSubmit={handleAdd} />
   </div>

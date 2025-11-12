@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Product } from "../../types";
 import ProductForm from "../../ProductForm";
-import Com from "@/app/Com";
+import Com from "@/app/Header";
  
 export default function EditProductPage() {
   const { id } = useParams();
@@ -33,7 +33,7 @@ export default function EditProductPage() {
   return (
     <div className="p-8 max-w-6xl mx-auto">
       <h1 className="text-2xl font-bold mb-6">Edit Product</h1>
-        <Com/>
+    
       <ProductForm initialData={product} onSubmit={handleUpdate} />
     </div>
   );

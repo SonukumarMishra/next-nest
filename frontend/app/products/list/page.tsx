@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Product } from "../types";
 import { useRouter } from "next/navigation";
-import Com from "@/app/Com";
+import Com from "@/app/Header";
  
 export default function ProductListPage(){
 
@@ -34,7 +34,7 @@ export default function ProductListPage(){
          
         
       </div>
-       <Com/>
+      
 
       <table className="w-full border-collapse border">
         <thead>

@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Com from "../Com";
 
 interface Role {
   id?: number;
@@ -62,35 +61,36 @@ export default function RolePage() {
     setView("form");
   };
 
-  const handleDelete = async (id: number) => {
-    if (confirm("Are you sure you want to delete this role?")) {
-      await fetch(`http://localhost:5000/roles/${id}`, { method: "DELETE" });
-      fetchRoles();
-    }
-  };
-    const handleChangeStatus = async (id: number, status: number) => {
-      await fetch(`http://localhost:5000/roles/change-status`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, status }),
+
+  const handleDelete=async (id:number)=>{
+    if(confirm("Are you sure you want to delete this role?")){
+      await fetch(`http://localhost:5000/roles/${id}`,{
+        method:"DELETE"
       });
       fetchRoles();
-    };
-
-  const handleAddNew = () => {
+    }
+  }
+  const handleChangeStatus=async (id:number,status:number)=>{
+    await fetch(`http://localhost:5000/roles/change-status`,{
+      method:"PATCH",
+      headers:{"content-Type":"application/json"},
+      body:JSON.stringify({id,status}),
+    });
+    fetchRoles();
+  }
+  const handleAddNew=()=>{
     setEditingId(null);
     setForm({
-      name: "",
-      status: 1
+      name:"",
+      status:1
     });
     setView("form");
-  };
+  }
 
   return (
     <div className="p-8 max-w-6xl mx-auto">
       <h1 className="text-2xl font-bold mb-6">Role Management</h1>
-      <Com />
-
+     
       {view === "list" ? (
         <>
           <div className="flex justify-end mb-4">
@@ -191,7 +191,9 @@ export default function RolePage() {
             </div>
           </form>
         </>
-      )}
+      )
+      }
+     
     </div>
   );
 }

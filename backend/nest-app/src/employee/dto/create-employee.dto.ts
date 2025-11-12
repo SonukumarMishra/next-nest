@@ -17,4 +17,5 @@ export class CreateEmployeeDto {
     registrationDay:string
     address:string
     salary:number
+    role_id:number
 }

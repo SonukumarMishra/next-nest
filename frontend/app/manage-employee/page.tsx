@@ -1,18 +1,44 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Com from "../Com";
+import Com from "../Header";
+import Footer from "../Footer";
+
+// ---------------------- INTERFACES ----------------------
 
 interface Role {
   id: number;
   name: string;
 }
 
+interface Country {
+  id: number;
+  name: string;
+}
+
+interface State {
+  id: number;
+  name: string;
+  country_id: number;
+}
+
+interface City {
+  id: number;
+  name: string;
+  state_id: number;
+}
+
 interface Employee {
   id?: number;
   name: string;
   role?: Role;
-  role_id?: number; // 👈 added for easier form binding
+  role_id?: number;
+  country?: Country;
+  country_id?: number;
+  state?: State;
+  state_id?: number;
+  city?: City;
+  city_id?: number;
   email: string;
   phone?: string;
   address?: string;
@@ -23,39 +49,37 @@ interface Employee {
   totalLogin?: number;
 }
 
+// ---------------------- COMPONENT ----------------------
+
 export default function EmployeePage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
-  const [roles, setRoles] = useState<Role[]>([]); // 👈 added
-  // const [form, setForm] = useState<Employee>({
-  //   name: "",
-  //   role_id: 1,
-  //   email: "",
-  //   phone: "",
-  //   address: "",
-  //   status: 1,
-  //   password: "",
-  //   salary: 0,
-  //   totalLogin: 0,
-  // });
-
+  const [roles, setRoles] = useState<Role[]>([]);
+  const [countries, setCountries] = useState<Country[]>([]);
+  const [states, setStates] = useState<State[]>([]);
+  const [cities, setCities] = useState<City[]>([]);
   const [form, setForm] = useState<Employee>({
-  name: "",
-  role: { id: 1, name: "Employee" }, // default
-  email: "",
-  phone: "",
-  address: "",
-  status: 1,
-  password: "",
-  salary: 0,
-  totalLogin: 0,
-});
+    name: "",
+    role_id: 1,
+    country_id: 101,
+    state_id: undefined,
+    city_id: undefined,
+    email: "",
+    phone: "",
+    address: "",
+    status: 1,
+    password: "",
+    salary: 0,
+    totalLogin: 0,
+  });
   const [editingId, setEditingId] = useState<number | null>(null);
   const [view, setView] = useState<"list" | "form">("list");
 
-  // Fetch employees & roles
+  // ---------------------- DATA FETCHING ----------------------
+
   useEffect(() => {
     fetchEmployees();
     fetchRoles();
+    fetchCountries();
   }, []);
 
   const fetchEmployees = async () => {
@@ -70,15 +94,67 @@ export default function EmployeePage() {
     setRoles(data);
   };
 
+  const fetchCountries = async () => {
+    const res = await fetch("http://localhost:5000/countries");
+    const data = await res.json();
+    setCountries(data);
+  };
+
+  const fetchStates = async (countryId: number) => {
+    if (!countryId) {
+      setStates([]);
+      return;
+    }
+    const res = await fetch(`http://localhost:5000/states/state-list`,{
+      method:"POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({countryId}),
+
+    });
+    const data = await res.json();
+    setStates(data);
+  };
+
+  const fetchCities = async (stateId: number) => {
+    if (!stateId) {
+      setCities([]);
+      return;
+    }
+    const res = await fetch(`http://localhost:5000/cities/city-list`,{
+      method:"POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({stateId}),
+    });
+    const data = await res.json();
+    setCities(data);
+  };
+
+  // ---------------------- FORM HANDLERS ----------------------
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setForm({
-      ...form,
-      [name]:
-        name === "salary" ? Number(value) : // ensure numeric
-        name === "role_id" ? Number(value) :
-        value,
-    });
+    const numValue = Number(value);
+
+    if (name === "country_id") {
+      setForm({ ...form, country_id: numValue, state_id: undefined, city_id: undefined });
+      setCities([]);
+      fetchStates(numValue);
+    } else if (name === "state_id") {
+      setForm({ ...form, state_id: numValue, city_id: undefined });
+      fetchCities(numValue);
+    } else {
+      setForm({
+        ...form,
+        [name]:
+          name === "salary" ||
+          name === "role_id" ||
+          name === "country_id" ||
+          name === "state_id" ||
+          name === "city_id"
+            ? numValue
+            : value,
+      });
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -89,8 +165,11 @@ export default function EmployeePage() {
       ? `http://localhost:5000/employees/${editingId}`
       : "http://localhost:5000/employees";
 
-    // Attach selected role_id before sending
-    const payload = { ...form, role_id: form.role_id };
+    const payload = { ...form };
+    delete (payload as any).role;
+    delete (payload as any).country;
+    delete (payload as any).state;
+    delete (payload as any).city;
 
     await fetch(url, {
       method,
@@ -98,9 +177,18 @@ export default function EmployeePage() {
       body: JSON.stringify(payload),
     });
 
+    resetForm();
+    fetchEmployees();
+    setView("list");
+  };
+
+  const resetForm = () => {
     setForm({
       name: "",
-      role_id: 0,
+      role_id: 1,
+      country_id: 101,
+      state_id: undefined,
+      city_id: undefined,
       email: "",
       phone: "",
       address: "",
@@ -110,15 +198,22 @@ export default function EmployeePage() {
       totalLogin: 0,
     });
     setEditingId(null);
-    fetchEmployees();
-    setView("list");
+    setStates([]);
+    setCities([]);
   };
 
   const handleEdit = (emp: Employee) => {
     setForm({
       ...emp,
-      role_id: emp.role?.id, // map nested role object to role_id for form
+      role_id: emp.role?.id || 1,
+      country_id: emp.country?.id || 101,
+      state_id: emp.state?.id,
+      city_id: emp.city?.id,
     });
+
+    if (emp.country?.id) fetchStates(emp.country.id);
+    if (emp.state?.id) fetchCities(emp.state.id);
+
     setEditingId(emp.id || null);
     setView("form");
   };
@@ -131,34 +226,25 @@ export default function EmployeePage() {
   };
 
   const handleAddNew = () => {
-    setEditingId(null);
-    setForm({
-      name: "",
-      role_id: 1,
-      email: "",
-      phone: "",
-      address: "",
-      status: 1,
-      password: "",
-      salary: 0,
-      totalLogin: 0,
-    });
+    resetForm();
     setView("form");
   };
+
+  // ---------------------- RENDER ----------------------
 
   return (
     <div className="p-8 max-w-6xl mx-auto">
       <h1 className="text-2xl font-bold mb-6">Employee Management</h1>
-      <Com />
 
       {view === "list" ? (
         <>
           <div className="flex justify-end mb-4">
             <button
               onClick={handleAddNew}
-              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+              className="bg-blue-600 font-bold text-white px-4 py-2 rounded hover:bg-blue-700 flex items-center gap-2"
             >
-              ➕ Add New Employee
+              <i className="bi bi-person-plus" style={{ fontSize: "20px" }}></i>
+              Add New Employee
             </button>
           </div>
 
@@ -168,6 +254,9 @@ export default function EmployeePage() {
                 <th className="border p-2">#</th>
                 <th className="border p-2">Name</th>
                 <th className="border p-2">Role</th>
+                <th className="border p-2">Country</th>
+                <th className="border p-2">State</th>
+                <th className="border p-2">City</th>
                 <th className="border p-2">Email</th>
                 <th className="border p-2">Phone</th>
                 <th className="border p-2">Salary</th>
@@ -182,6 +271,9 @@ export default function EmployeePage() {
                   <td className="border p-2">{index + 1}</td>
                   <td className="border p-2">{emp.name}</td>
                   <td className="border p-2">{emp.role?.name}</td>
+                  <td className="border p-2">{emp.country?.name}</td>
+                  <td className="border p-2">{emp.state?.name}</td>
+                  <td className="border p-2">{emp.city?.name}</td>
                   <td className="border p-2">{emp.email}</td>
                   <td className="border p-2">{emp.phone}</td>
                   <td className="border p-2">{emp.salary?.toFixed(2)}</td>
@@ -192,13 +284,13 @@ export default function EmployeePage() {
                       onClick={() => handleEdit(emp)}
                       className="bg-yellow-500 text-white px-2 py-1 rounded"
                     >
-                      Edit
+                      <i className="bi bi-pencil-fill"></i>
                     </button>
                     <button
                       onClick={() => handleDelete(emp.id!)}
-                      className="bg-red-600 text-white px-2 py-1 rounded"
+                      className="bg-red-600 text-white px-2 py-1 rounded hover:bg-red-800"
                     >
-                      Delete
+                      <i className="bi bi-trash3"></i>
                     </button>
                   </td>
                 </tr>
@@ -215,7 +307,7 @@ export default function EmployeePage() {
             {editingId ? "Edit Employee" : "Add Employee"}
           </h2>
 
-          {/* Role dropdown */}
+          {/* Role Dropdown */}
           <select
             id="role_id"
             name="role_id"
@@ -228,6 +320,59 @@ export default function EmployeePage() {
             {roles.map((role) => (
               <option key={role.id} value={role.id}>
                 {role.name}
+              </option>
+            ))}
+          </select>
+
+          {/* Country Dropdown */}
+          <select
+            id="country_id"
+            name="country_id"
+            value={form.country_id || ""}
+            onChange={handleChange}
+            className="border p-2 rounded"
+            required
+          >
+            <option value="">-- Select Country --</option>
+            {countries.map((country) => (
+              <option key={country.id} value={country.id}>
+                {country.name}
+              </option>
+            ))}
+          </select>
+
+          {/* State Dropdown */}
+          <select
+            id="state_id"
+            name="state_id"
+            value={form.state_id || ""}
+            onChange={handleChange}
+            className="border p-2 rounded"
+            required
+            disabled={!states.length}
+          >
+            <option value="">-- Select State --</option>
+            {states.map((state) => (
+              <option key={state.id} value={state.id}>
+                {state.name}
+              </option>
+            ))}
+          </select>
+
+          {/* City Dropdown */}
+          <select
+            id="city_id"
+            name="city_id"
+            value={form.city_id || ""}
+            onChange={handleChange}
+            className="border p-2 rounded"
+            required
+            disabled={!cities.length}
+          >
+            <option value="">-- Select City --</option>
+            {cities.map((city) => (
+              <option key={city.id} value={city.id}>
+                {city.name}
               </option>
             ))}
           </select>
