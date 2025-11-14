@@ -3,134 +3,63 @@
 import { useEffect, useState } from "react";
 import Com from "../Header";
 import Footer from "../Footer";
-
-// ---------------------- INTERFACES ----------------------
-
-interface Role {
-  id: number;
-  name: string;
-}
-
-interface Country {
-  id: number;
-  name: string;
-}
-
-interface State {
-  id: number;
-  name: string;
-  country_id: number;
-}
-
-interface City {
-  id: number;
-  name: string;
-  state_id: number;
-}
-
-interface Employee {
-  id?: number;
-  name: string;
-  role?: Role;
-  role_id?: number;
-  country?: Country;
-  country_id?: number;
-  state?: State;
-  state_id?: number;
-  city?: City;
-  city_id?: number;
-  email: string;
-  phone?: string;
-  address?: string;
-  status?: number;
-  password?: string;
-  createdDate?: string;
-  salary?: number;
-  totalLogin?: number;
-}
+ 
+import {
+  Role,
+  Country,
+  State,
+  City,
+  Employee,
+  fetchCountries,
+  fetchStates,
+  fetchCities,
+  defaultEmployeeForm,
+  apiFetch,
+  API_BASE,
+} from "../common";
+import toast from "react-hot-toast";
 
 // ---------------------- COMPONENT ----------------------
-
 export default function EmployeePage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
   const [countries, setCountries] = useState<Country[]>([]);
   const [states, setStates] = useState<State[]>([]);
   const [cities, setCities] = useState<City[]>([]);
-  const [form, setForm] = useState<Employee>({
-    name: "",
-    role_id: 1,
-    country_id: 101,
-    state_id: undefined,
-    city_id: undefined,
-    email: "",
-    phone: "",
-    address: "",
-    status: 1,
-    password: "",
-    salary: 0,
-    totalLogin: 0,
-  });
+  const [form, setForm] = useState<Employee>(defaultEmployeeForm);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [view, setView] = useState<"list" | "form">("list");
+  const [imageFile, setImageFile] = useState<File | null>(null);
+
 
   // ---------------------- DATA FETCHING ----------------------
-
   useEffect(() => {
-    fetchEmployees();
-    fetchRoles();
-    fetchCountries();
+    loadInitialData();
   }, []);
 
-  const fetchEmployees = async () => {
-    const res = await fetch("http://localhost:5000/employees");
-    const data = await res.json();
-    setEmployees(data);
+  const loadInitialData = async () => {
+    const [empRes, roleRes, countryRes] = await Promise.all([
+      apiFetch(`${API_BASE}/employees`),
+      apiFetch(`${API_BASE}/roles`),
+      fetchCountries(),
+    ]);
+    setEmployees(empRes);
+    setRoles(roleRes);
+    setCountries(countryRes);
   };
-
-  const fetchRoles = async () => {
-    const res = await fetch("http://localhost:5000/roles");
-    const data = await res.json();
-    setRoles(data);
-  };
-
-  const fetchCountries = async () => {
-    const res = await fetch("http://localhost:5000/countries");
-    const data = await res.json();
-    setCountries(data);
-  };
-
-  const fetchStates = async (countryId: number) => {
-    if (!countryId) {
-      setStates([]);
-      return;
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setImageFile(e.target.files[0]);
     }
-    const res = await fetch(`http://localhost:5000/states/state-list`,{
-      method:"POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({countryId}),
-
-    });
-    const data = await res.json();
-    setStates(data);
   };
-
-  const fetchCities = async (stateId: number) => {
-    if (!stateId) {
-      setCities([]);
-      return;
+  const handleDelete = async (id: number) => {
+    if (confirm("Are you sure you want to delete this employee?")) {
+      await apiFetch(`${API_BASE}/employees/${id}`, { method: "DELETE" });
+      setEmployees(await apiFetch(`${API_BASE}/employees`));
     }
-    const res = await fetch(`http://localhost:5000/cities/city-list`,{
-      method:"POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({stateId}),
-    });
-    const data = await res.json();
-    setCities(data);
   };
 
   // ---------------------- FORM HANDLERS ----------------------
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     const numValue = Number(value);
@@ -138,70 +67,133 @@ export default function EmployeePage() {
     if (name === "country_id") {
       setForm({ ...form, country_id: numValue, state_id: undefined, city_id: undefined });
       setCities([]);
-      fetchStates(numValue);
+      fetchStates(numValue).then(setStates);
     } else if (name === "state_id") {
       setForm({ ...form, state_id: numValue, city_id: undefined });
-      fetchCities(numValue);
+      fetchCities(numValue).then(setCities);
     } else {
       setForm({
         ...form,
         [name]:
           name === "salary" ||
-          name === "role_id" ||
-          name === "country_id" ||
-          name === "state_id" ||
-          name === "city_id"
+            name === "role_id" ||
+            name === "country_id" ||
+            name === "state_id" ||
+            name === "city_id"
             ? numValue
             : value,
       });
     }
   };
 
+  //   const handleSubmit = async (e: React.FormEvent) => {
+  //     e.preventDefault();
+
+  //     const method = editingId ? "PATCH" : "POST";
+  //     const url = editingId
+  //       ? `${API_BASE}/employees/${editingId}`
+  //       : `${API_BASE}/employees`;
+
+  //     const payload = { ...form };
+
+
+  //     delete (payload as any).role;
+  //     delete (payload as any).country;
+  //     delete (payload as any).state;
+  //     delete (payload as any).city;
+
+  //     await apiFetch(url, { method, body: payload });
+
+  //     resetForm();
+  //     setEmployees(await apiFetch(`${API_BASE}/employees`));
+  //     setView("list");
+  //   };
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const method = editingId ? "PATCH" : "POST";
     const url = editingId
-      ? `http://localhost:5000/employees/${editingId}`
-      : "http://localhost:5000/employees";
+      ? `${API_BASE}/employees/${editingId}`
+      : `${API_BASE}/employees`;
 
-    const payload = { ...form };
-    delete (payload as any).role;
-    delete (payload as any).country;
-    delete (payload as any).state;
-    delete (payload as any).city;
+    const formData = new FormData();
 
-    await fetch(url, {
-      method,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+    // Append all normal fields
+    Object.entries(form).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        formData.append(key, String(value));
+      }
     });
 
+    if (imageFile) {
+      formData.append("image", imageFile);
+    }
+
+    // Remove non-API fields
+    formData.delete("role");
+    formData.delete("country");
+    formData.delete("state");
+    formData.delete("city");
+
+    await apiFetch(url, { method, body: formData });
+
     resetForm();
-    fetchEmployees();
+    setEmployees(await apiFetch(`${API_BASE}/employees`));
     setView("list");
   };
 
   const resetForm = () => {
-    setForm({
-      name: "",
-      role_id: 1,
-      country_id: 101,
-      state_id: undefined,
-      city_id: undefined,
-      email: "",
-      phone: "",
-      address: "",
-      status: 1,
-      password: "",
-      salary: 0,
-      totalLogin: 0,
-    });
+    setForm(defaultEmployeeForm);
     setEditingId(null);
     setStates([]);
     setCities([]);
   };
+  // const handleChangeStatus = async (id: number, status: number) => {
+  //   await fetch(`http://localhost:5000/employees/change-status`, {
+  //     method: "PATCH",
+  //     headers: { "content-Type": "application/json" },
+  //     body: JSON.stringify({ id, status }),
+  //   });
+  //   setEmployees(await apiFetch(`${API_BASE}/employees`));
+  // }
 
+
+  const handleChangeStatus = async (id: number, status: number) => {
+  try {
+    const res = await fetch(`http://localhost:5000/employees/change-status`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, status }),
+    });
+
+    const data = await res.json();
+
+    if (data.status) {
+      toast.success(data.message || "Status updated");
+    } else {
+      toast.error(data.message || "Failed to update status");
+    }
+
+    setEmployees(await apiFetch(`${API_BASE}/employees`));
+  } catch (error) {
+    toast.error("Something went wrong");
+  }
+};
+
+
+
+  // Status change in select dropdown
+  const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setForm({ ...form, status: Number(e.target.value) });
+  };
+  const handleRemoveImage = async (id: number) => {
+    await fetch(`http://localhost:5000/employees/remove-image`, {
+      method: "PATCH",
+      body: JSON.stringify({ id, image: null }),
+      headers: { "Content-Type": "application/json" },
+    });
+    setEmployees(await apiFetch(`${API_BASE}/employees`));
+  };
   const handleEdit = (emp: Employee) => {
     setForm({
       ...emp,
@@ -211,18 +203,14 @@ export default function EmployeePage() {
       city_id: emp.city?.id,
     });
 
-    if (emp.country?.id) fetchStates(emp.country.id);
-    if (emp.state?.id) fetchCities(emp.state.id);
+    if (emp.country?.id) {
+      fetchStates(emp.country.id).then(setStates);
+
+    };
+    if (emp.state?.id) fetchCities(emp.state.id).then(setCities);
 
     setEditingId(emp.id || null);
     setView("form");
-  };
-
-  const handleDelete = async (id: number) => {
-    if (confirm("Are you sure you want to delete this employee?")) {
-      await fetch(`http://localhost:5000/employees/${id}`, { method: "DELETE" });
-      fetchEmployees();
-    }
   };
 
   const handleAddNew = () => {
@@ -231,11 +219,9 @@ export default function EmployeePage() {
   };
 
   // ---------------------- RENDER ----------------------
-
   return (
     <div className="p-8 max-w-6xl mx-auto">
       <h1 className="text-2xl font-bold mb-6">Employee Management</h1>
-
       {view === "list" ? (
         <>
           <div className="flex justify-end mb-4">
@@ -260,8 +246,8 @@ export default function EmployeePage() {
                 <th className="border p-2">Email</th>
                 <th className="border p-2">Phone</th>
                 <th className="border p-2">Salary</th>
-                <th className="border p-2">Address</th>
-                <th className="border p-2">Total Login</th>
+                <th className="border p-2">Image</th>
+                <th className="border p-2">Status</th>
                 <th className="border p-2">Actions</th>
               </tr>
             </thead>
@@ -277,16 +263,37 @@ export default function EmployeePage() {
                   <td className="border p-2">{emp.email}</td>
                   <td className="border p-2">{emp.phone}</td>
                   <td className="border p-2">{emp.salary?.toFixed(2)}</td>
-                  <td className="border p-2">{emp.address}</td>
-                  <td className="border p-2">{emp.totalLogin}</td>
+                  <td className="border p-2 text-center">
+                    {emp.image ? (
+                      <>
+                        <img
+                          src={`http://localhost:5000/${emp.image}`}
+                          alt={emp.name}
+                          className="h-16 w-16 object-cover rounded mx-auto"
+                        />
+                        <button
+                          onClick={() => handleRemoveImage(emp.id!)}
+                          className="bg-red-600 text-white px-2 py-1 rounded mt-2 text-sm"
+                        >
+                          Remove
+                        </button>
+                      </>
+                    ) : (
+                      <span className="text-gray-400 text-sm">No Image</span>
+                    )}
+                  </td>
+                  <td className="border p-2"> <button title="Change Status"
+                    onClick={() => handleChangeStatus(emp.id!, emp.status === 1 ? 0 : 1)}
+                    className={`text-white px-2 py-1 rounded ${emp.status === 1 ? 'bg-green-500' : 'bg-red-500'}`}
+                  >{emp.status === 1 ? 'Active' : 'Inactive'}</button></td>
                   <td className="border p-2 flex gap-2">
-                    <button
+                    <button title="Edit"
                       onClick={() => handleEdit(emp)}
                       className="bg-yellow-500 text-white px-2 py-1 rounded"
                     >
                       <i className="bi bi-pencil-fill"></i>
                     </button>
-                    <button
+                    <button title="Delete"
                       onClick={() => handleDelete(emp.id!)}
                       className="bg-red-600 text-white px-2 py-1 rounded hover:bg-red-800"
                     >
@@ -415,15 +422,46 @@ export default function EmployeePage() {
             onChange={handleChange}
             className="border p-2 rounded"
           />
-          <input
-            name="password"
-            placeholder="Password"
-            type="password"
-            value={form.password || ""}
-            onChange={handleChange}
-            className="border p-2 rounded"
-            required={!editingId}
-          />
+
+          <div className="flex flex-col">
+            <label htmlFor="image" className="font-medium mb-1">
+              Category Image
+            </label>
+            <input
+              id="image"
+              name="image"
+              type="file"
+              onChange={handleImageChange}
+              className="border p-2 rounded"
+              accept="image/*"
+            />
+          </div>
+
+          {!editingId && (
+            < input name="password" placeholder="Password" type="password" onChange={handleChange}
+              className="border p-2 rounded"
+              required={!editingId}
+            />
+          )}
+
+          <div className="flex flex-col">
+            <label htmlFor="status" className="font-medium mb-1">
+              Status
+            </label>
+            <select
+              id="status"
+              name="status"
+              value={form.status ?? ""}
+              onChange={handleStatusChange}
+              className="border p-2 rounded"
+              required
+            >
+              <option value="">-- Select Status --</option>
+              <option value="1">Active</option>
+              <option value="0">Inactive</option>
+            </select>
+          </div>
+
 
           <div className="col-span-2 flex justify-between">
             <button

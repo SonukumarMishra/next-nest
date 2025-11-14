@@ -1,6 +1,5 @@
 "use client";
 import Com from "@/app/Header";
-// import Header from "@/app/Header";
 import ProductForm from "../ProductForm";
 import { Product } from "../types";
 import { useRouter } from "next/navigation";
@@ -14,18 +13,14 @@ export default function AddProductPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
-    router.push("/products/list");
+    router.push("/dashboard");
   };
 
 return (
   <div className="p-8 max-w-6xl mx-auto">
-    
     <div className="flex items-center justify-between mb-6">
       <h1 className="text-2xl font-bold">Add New Product</h1>
-      
     </div>
- 
-
     <ProductForm onSubmit={handleAdd} />
   </div>
 );

@@ -22,7 +22,7 @@ export default function LoginPage() {
         localStorage.setItem("token", response.data.data.token);
         localStorage.setItem("user", JSON.stringify(response.data.data.employee));
         localStorage.setItem("userName", response.data.data.employee.name);
-        router.push("/products/list");
+        router.push("/dashboard");
       } else {
         alert(response.data.message || "Invalid credentials");
       }
@@ -36,7 +36,7 @@ export default function LoginPage() {
 
   useEffect(() => {
      if (localStorage.getItem("isLoggedIn") === "true") {
-      router.push("/products/list");
+      router.push("/dashboard");
     }
   }, []);
 

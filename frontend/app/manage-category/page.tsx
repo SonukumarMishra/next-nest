@@ -247,9 +247,8 @@ export default function CategoryPage() {
                   onClick={() =>
                     handleChangeStatus(category.id!, category.status === 1 ? 0 : 1)
                   }
-                  className={`text-white px-3 py-1 rounded ${
-                    category.status === 1 ? "bg-green-500" : "bg-red-500"
-                  }`}
+                  className={`text-white px-3 py-1 rounded ${category.status === 1 ? "bg-green-500" : "bg-red-500"
+                    }`}
                 >
                   {category.status === 1 ? "Active" : "Inactive"}
                 </button>

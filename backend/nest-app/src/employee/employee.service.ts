@@ -13,28 +13,28 @@ export class EmployeeService {
     private emoloyeeRepository: Repository<Employee>,
   ) { }
   async create(createEmployeeDto: CreateEmployeeDto) {
-  const emailExistance = await this.emoloyeeRepository.findOneBy({ email: createEmployeeDto.email });
-  if (emailExistance) throw new ConflictException("Email Address already Exists!");
+    const emailExistance = await this.emoloyeeRepository.findOneBy({ email: createEmployeeDto.email });
+    if (emailExistance) throw new ConflictException("Email Address already Exists!");
 
-  const phoneExistance = await this.emoloyeeRepository.findOneBy({ phone: createEmployeeDto.phone });
-  if (phoneExistance) throw new ConflictException("Phone already Exists!");
+    const phoneExistance = await this.emoloyeeRepository.findOneBy({ phone: createEmployeeDto.phone });
+    if (phoneExistance) throw new ConflictException("Phone already Exists!");
 
-  const password = await bcrypt.hash(createEmployeeDto.password, 10);
-  const otp = crypto.randomInt(100000, 999999).toString();
-  const otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
-  const registrationDay = new Date().toLocaleDateString('en', { weekday: 'long' });
+    const password = await bcrypt.hash(createEmployeeDto.password, 10);
+    const otp = crypto.randomInt(100000, 999999).toString();
+    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
+    const registrationDay = new Date().toLocaleDateString('en', { weekday: 'long' });
 
-  const employee = this.emoloyeeRepository.create({
-    ...createEmployeeDto,
-    otp,
-    otpExpiry,
-    registrationDay,
-    password,
-    role: { id: createEmployeeDto.role_id } // ✅ explicitly set relation
-  });
+    const employee = this.emoloyeeRepository.create({
+      ...createEmployeeDto,
+      otp,
+      otpExpiry,
+      registrationDay,
+      password,
+      role: { id: createEmployeeDto.role_id }
+    });
 
-  return this.emoloyeeRepository.save(employee);
-}
+    return this.emoloyeeRepository.save(employee);
+  }
 
 
   async findEmployee(key: string, value: string): Promise<Employee> {
@@ -73,20 +73,38 @@ export class EmployeeService {
     return this.emoloyeeRepository.findOneBy({ id });
   }
 
-  async updateLoginCounter(employee:Employee){
-     await this.emoloyeeRepository.increment(
-    { id: employee.id }, 
-    'totalLogin', 
-    1    
-  );
-      
+
+  async changeStatus(id: number, status: number) {
+    const employee = await this.findOne(id);
+    if (!employee) {
+      return this.setMessage(false, 404, "Employee not found");
+    }
+    try {
+      employee.status = status;
+      await this.emoloyeeRepository.save(employee);
+      return this.setMessage(true, 200, "Status updated successfully");
+    } catch (error) {
+      return this.setMessage(false, 400, "Failed to Update");
+    }
+  }
+
+  async setMessage(status: boolean, code: number, message: string) {
+    return {status,message,code,};
+  }
+  async updateLoginCounter(employee: Employee) {
+    await this.emoloyeeRepository.increment(
+      { id: employee.id },
+      'totalLogin',
+      1
+    );
+
   }
 
 
 
   findAll() {
     return this.emoloyeeRepository.find({
-    relations: ['role', 'country', 'state', 'city'],
+      relations: ['role', 'country', 'state', 'city'],
     });
   }
 

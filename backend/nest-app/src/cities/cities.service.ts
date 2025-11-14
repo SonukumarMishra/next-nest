@@ -15,6 +15,7 @@ export class CitiesService {
  async findAll():Promise<City[]> {
     return this.cityRepository.find();
   }
+  
 
 
 async getCityListByState(stateId:number):Promise<City[]> {

@@ -4,29 +4,24 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Footer from "./Footer";
 import Com from "./Header";
+import { Toaster } from "react-hot-toast";
 
 export default function ClientLayoutWrapper({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  // 👇 Check login status initially
   useEffect(() => {
     const checkLoginStatus = () => {
       const loggedIn = localStorage.getItem("isLoggedIn") === "true";
       setIsLoggedIn(loggedIn);
     };
 
-    checkLoginStatus(); // Run once on mount
+    checkLoginStatus();
 
-    // 👇 Listen for login/logout changes in localStorage
     window.addEventListener("storage", checkLoginStatus);
-
-    return () => {
-      window.removeEventListener("storage", checkLoginStatus);
-    };
+    return () => window.removeEventListener("storage", checkLoginStatus);
   }, []);
 
-  // 👇 Redirect if logged out
   useEffect(() => {
     if (!isLoggedIn) {
       router.push("/");
@@ -35,7 +30,9 @@ export default function ClientLayoutWrapper({ children }: { children: React.Reac
 
   return (
     <>
-      {/* ✅ Show Header only when logged in */}
+      {/* 👇 GLOBAL TOASTER (now it will work everywhere) */}
+      <Toaster position="top-right" />
+
       {isLoggedIn && (
         <div className="row bg-cyan-700 py-4">
           <div className="container" style={{ width: "80%" }}>
