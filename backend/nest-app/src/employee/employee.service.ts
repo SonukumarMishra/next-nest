@@ -1,6 +1,6 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { ILike, Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import * as crypto from "crypto";
 import { Employee } from './entities/employee.entity';
@@ -73,7 +73,6 @@ export class EmployeeService {
     return this.emoloyeeRepository.findOneBy({ id });
   }
 
-
   async changeStatus(id: number, status: number) {
     const employee = await this.findOne(id);
     if (!employee) {
@@ -101,12 +100,44 @@ export class EmployeeService {
   }
 
 
+async findAll(dto: { page: number; pageSize: number; search?: string; countryId?: number }) {
+  const { page, pageSize, search, countryId } = dto;
+  const skip = (page - 1) * pageSize;
 
-  findAll() {
-    return this.emoloyeeRepository.find({
-      relations: ['role', 'country', 'state', 'city'],
-    });
+  const where: any = {};
+
+  // Name search
+  if (search && search.trim() !== "") {
+    where.name = ILike(`%${search}%`);
   }
+
+  // Country filter
+  if (countryId) {
+    where.country = { id: countryId };
+  }
+
+  const [data, total] = await this.emoloyeeRepository.findAndCount({
+    where,
+    relations: ['role', 'country', 'state', 'city'],
+    order: { id: "DESC" },
+    skip,
+    take: pageSize,
+  });
+
+  return {
+    data,
+    total,
+    page,
+    pageSize,
+  };
+}
+
+
+  // findAll() {
+  //   return this.emoloyeeRepository.find({
+  //     relations: ['role', 'country', 'state', 'city'],
+  //   });
+  // }
 
   async findOne(id: number) {
     const emp = await this.emoloyeeRepository.findOne({ where: { id }, relations: ['role'] });

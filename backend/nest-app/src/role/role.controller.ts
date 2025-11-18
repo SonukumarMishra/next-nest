@@ -12,10 +12,15 @@ export class RoleController {
     return this.roleService.create(createRoleDto);
   }
 
-  @Get()
-  findAll() {
-    return this.roleService.findAll();
-  }
+   @Get()
+   findAll() {
+     return this.roleService.findAllSimple();
+   }
+
+@Post('list')
+roleList(@Body() dto: { page: number; pageSize: number; search?: string }) {
+  return this.roleService.findAll(dto);
+}
 
   @Get(':id')
   findOne(@Param('id') id: string) {

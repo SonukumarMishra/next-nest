@@ -1,4 +1,4 @@
- // utils/common.ts
+// utils/common.ts
 
 // ---------- Shared Interfaces ----------
 export interface Role {
@@ -53,32 +53,14 @@ export interface FetchOptions {
 
 export const API_BASE = "http://localhost:5000";
 
-// Generic Fetch Wrapper
-// export const apiFetch = async (url: string, options: FetchOptions = {}) => {
-//   const res = await fetch(url, {
-//     method: options.method || "GET",
-//     headers: { "Content-Type": "application/json" },
-//     ...(options.body && { body: JSON.stringify(options.body) }),
-//   });
-
-//   if (!res.ok) {
-//     throw new Error(`HTTP error! Status: ${res.status}`);
-//   }
-
-//   return res.json();
-// };
-
 export const apiFetch = async (url: string, options: FetchOptions = {}) => {
   const isFormData = options.body instanceof FormData;
 
   const res = await fetch(url, {
     method: options.method || "GET",
-
-    // Content-Type must NOT be set for FormData
     headers: isFormData
       ? undefined
       : { "Content-Type": "application/json" },
-
     body: isFormData
       ? options.body
       : options.body
@@ -86,13 +68,12 @@ export const apiFetch = async (url: string, options: FetchOptions = {}) => {
       : undefined,
   });
 
-  if (!res.ok) {
-    throw new Error(`HTTP error! Status: ${res.status}`);
-  }
+  // if (!res.ok) {
+  //   throw new Error(`HTTP error! Status: ${res.status}`);
+  // }
 
   return res.json();
 };
-
 
 // ---------- Common Data Fetchers ----------
 export const fetchCountries = () => apiFetch(`${API_BASE}/countries`);
@@ -108,7 +89,6 @@ export const fetchCities = (stateId: number) =>
     method: "POST",
     body: { stateId },
   });
-
 
 // ---------- Default Form ----------
 export const defaultEmployeeForm: Employee = {

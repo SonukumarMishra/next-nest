@@ -30,7 +30,6 @@ export class EmployeeController {
     } else {
       console.log('3️⃣ File received:', file.originalname);
     }
-
     await this.employeeFileService.handleEmployeeFile(
       employee.id,
       file!,
@@ -66,10 +65,15 @@ export class EmployeeController {
 
 
 
-  @Get()
-  findAll() {
-    return this.employeeService.findAll();
-  }
+  // @Get()
+  // findAll() {
+  //   return this.employeeService.findAll();
+  // }
+
+@Post('list')
+findAll(@Body() dto: { page: number; pageSize: number; search?: string,countryId?: number }) {
+  return this.employeeService.findAll(dto);
+}
 
   @Get(':id')
   findOne(@Param('id') id: string) {

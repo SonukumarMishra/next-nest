@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { ILike, Repository } from 'typeorm';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { Role } from './entities/role.entity';
@@ -17,9 +17,36 @@ export class RoleService {
     return this.roleRepository.save(role);
   }
 
-  async findAll() {
-    return this.roleRepository.find();
+  async findAllSimple() {
+     return this.roleRepository.find();
+   }
+
+  async findAll(dto: { page: number; pageSize: number; search?: string }) {
+  const { page, pageSize, search } = dto;
+
+  const skip = (page - 1) * pageSize;
+
+  const where: any = {};
+
+  if (search && search.trim() !== "") {
+    where.name = ILike(`%${search}%`);
   }
+
+  const [data, total] = await this.roleRepository.findAndCount({
+    where,
+    order: { id: "DESC" },
+    skip,
+    take: pageSize,
+  });
+
+  return {
+    data,
+    total,
+    page,
+    pageSize,
+  };
+}
+
   async changeStatus(id: number, status: number) {
     return this.roleRepository.update(id, { status });
   }
