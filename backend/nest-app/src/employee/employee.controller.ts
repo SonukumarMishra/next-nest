@@ -71,7 +71,7 @@ export class EmployeeController {
   // }
 
 @Post('list')
-findAll(@Body() dto: { page: number; pageSize: number; search?: string,countryId?: number }) {
+findAll(@Body() dto: { page: number; pageSize: number; search?: string,countryId?: number,stateId?:number,cityId?:number }) {
   return this.employeeService.findAll(dto);
 }
 

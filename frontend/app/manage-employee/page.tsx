@@ -22,12 +22,19 @@ export default function EmployeePage() {
   const [countries, setCountries] = useState<Country[]>([]);
   const [states, setStates] = useState<State[]>([]);
   const [cities, setCities] = useState<City[]>([]);
+
   const [form, setForm] = useState<Employee>(defaultEmployeeForm);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [view, setView] = useState<"list" | "form">("list");
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [countryFilter, setCountryFilter] = useState<number | undefined>(undefined);
 
+  // FILTER STATES
+  const [countryFilter, setCountryFilter] = useState<number | undefined>(undefined);
+  const [stateFilter, setStateFilter] = useState<number | undefined>(undefined);
+  const [cityFilter, setCityFilter] = useState<number | undefined>(undefined);
+
+  const [filterStates, setFilterStates] = useState<State[]>([]);
+  const [filterCities, setFilterCities] = useState<City[]>([]);
 
   // Pagination & Search
   const [page, setPage] = useState(1);
@@ -42,11 +49,11 @@ export default function EmployeePage() {
 
   useEffect(() => {
     fetchEmployees();
-  }, [page, pageSize, search, countryFilter]);
+  }, [page, pageSize, search, countryFilter, stateFilter, cityFilter]);
 
   const loadInitialData = async () => {
     const [roleRes, countryRes] = await Promise.all([
-      apiFetch(`${API_BASE}/roles`,),
+      apiFetch(`${API_BASE}/roles`),
       fetchCountries(),
     ]);
 
@@ -60,13 +67,20 @@ export default function EmployeePage() {
     const res = await apiFetch(`${API_BASE}/employees/list`, {
       method: "POST",
       body: {
-        page, pageSize, search, countryId: countryFilter, // <-- send filter to server
+        page,
+        pageSize,
+        search,
+        countryId: countryFilter,
+        stateId: stateFilter,
+        cityId: cityFilter,
       },
     });
+
     setEmployees(res.data);
     setTotal(res.total);
   };
 
+  // ---------------------- EVENT HANDLERS ----------------------
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setImageFile(e.target.files[0]);
@@ -81,7 +95,6 @@ export default function EmployeePage() {
     }
   };
 
-  // ---------------------- FORM HANDLERS ----------------------
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     const numValue = Number(value);
@@ -97,11 +110,7 @@ export default function EmployeePage() {
       setForm({
         ...form,
         [name]:
-          name === "salary" ||
-            name === "role_id" ||
-            name === "country_id" ||
-            name === "state_id" ||
-            name === "city_id"
+          ["salary", "role_id", "country_id", "state_id", "city_id"].includes(name)
             ? numValue
             : value,
       });
@@ -134,6 +143,7 @@ export default function EmployeePage() {
     if (imageFile) formData.append("image", imageFile);
 
     await apiFetch(url, { method, body: formData });
+
     toast.success(editingId ? "Employee updated" : "Employee added");
 
     resetForm();
@@ -145,9 +155,9 @@ export default function EmployeePage() {
     setForm({
       ...emp,
       role_id: emp.role?.id || 1,
-      country_id: emp.country?.id || 101,
-      state_id: emp.state?.id,
-      city_id: emp.city?.id,
+      country_id: emp.country?.id || undefined,
+      state_id: emp.state?.id || undefined,
+      city_id: emp.city?.id || undefined,
     });
 
     if (emp.country?.id) fetchStates(emp.country.id).then(setStates);
@@ -157,33 +167,26 @@ export default function EmployeePage() {
     setView("form");
   };
 
-  const handleAddNew = () => {
-    resetForm();
-    setView("form");
-  };
-
   const handleChangeStatus = async (id: number, status: number) => {
     try {
-      const res = await fetch(`${API_BASE}/employees/change-status`, {
+      const res = await apiFetch(`${API_BASE}/employees/change-status`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, status }),
+        body: { id, status },
       });
-      const data = await res.json();
-      if (data.status) toast.success(data.message || "Status updated");
-      else toast.error(data.message || "Failed to update status");
+
+      toast.success("Status updated");
       fetchEmployees();
-    } catch (error) {
+    } catch {
       toast.error("Something went wrong");
     }
   };
 
   const handleRemoveImage = async (id: number) => {
-    await fetch(`${API_BASE}/employees/remove-image`, {
+    await apiFetch(`${API_BASE}/employees/remove-image`, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, image: null }),
+      body: { id },
     });
+
     fetchEmployees();
     toast.success("Image removed");
   };
@@ -195,42 +198,70 @@ export default function EmployeePage() {
 
       {view === "list" ? (
         <>
-          {/* Search + Add */}
-          <div className="flex justify-between mb-4">
-            
+          {/* ------- FILTERS ------- */}
+          <div className="flex gap-4 mb-4">
 
-            {/* Country Filter */}
-            <select
-              value={countryFilter || ""}
-              onChange={(e) => {
+            {/* COUNTRY FILTER */}
+            <select value={countryFilter || ""} onChange={async (e) => { const value = Number(e.target.value) || undefined;
+                setCountryFilter(value);
+                setStateFilter(undefined);
+                setCityFilter(undefined);
+
+                if (value) {
+                  const states = await fetchStates(value);
+                  setFilterStates(states);
+                  setFilterCities([]);
+                } else {
+                  setFilterStates([]);
+                  setFilterCities([]);
+                }
                 setPage(1);
-                setCountryFilter(Number(e.target.value) || undefined);
+              }} className="border p-2 rounded w-1/4">
+              <option value="">-- All Countries --</option>
+              {countries.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+
+            {/* STATE FILTER */}
+            <select value={stateFilter || ""} onChange={async (e) => {
+                const value = Number(e.target.value) || undefined;
+                setStateFilter(value);
+                setCityFilter(undefined);
+                if (value) {
+                  const cities = await fetchCities(value);
+                  setFilterCities(cities);
+                } else {
+                  setFilterCities([]);
+                }
+                setPage(1);
               }}
               className="border p-2 rounded w-1/4"
             >
-              <option value="">-- All Countries --</option>
-              {countries.map((country) => (
-                <option key={country.id} value={country.id}>
-                  {country.name}
-                </option>
-              ))}
+              <option value="">-- All States --</option>
+              {filterStates.map((s) => (<option key={s.id} value={s.id}>{s.name}</option> ))}
             </select>
-            <input
-              type="text"
-              placeholder="Search employee"
-              value={search}
-              onChange={(e) => { setPage(1); setSearch(e.target.value); }}
-              className="border p-2 rounded w-1/3"
-            />
-            <button
-              onClick={handleAddNew}
-              className="bg-blue-600 font-bold text-white px-4 py-2 rounded hover:bg-blue-700 flex items-center gap-2"
-            >
-              Add New Employee
-            </button>
+            {/* CITY FILTER */}
+            <select value={cityFilter || ""}  onChange={(e) => { setCityFilter(Number(e.target.value) || undefined); setPage(1); }} className="border p-2 rounded w-1/4" >
+              <option value="">-- All Cities --</option>
+              {filterCities.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
+            </select>
+            {/* Search */}
+            <input type="text" placeholder="Search employee" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1);}} className="border p-2 rounded w-1/3" />
           </div>
 
-          {/* Employee Table */}
+          {/* Add New */}
+          <button
+            onClick={() => {
+              resetForm();
+              setView("form");
+            }}
+            className="bg-blue-600 font-bold text-white px-4 py-2 rounded hover:bg-blue-700 mb-4"
+          >
+            Add New Employee
+          </button>
+
+          {/* EMPLOYEE TABLE */}
           <table className="w-full border-collapse border">
             <thead>
               <tr className="bg-gray-200">
@@ -248,6 +279,7 @@ export default function EmployeePage() {
                 <th className="border p-2">Actions</th>
               </tr>
             </thead>
+
             <tbody>
               {employees.map((emp, index) => (
                 <tr key={emp.id}>
@@ -260,6 +292,7 @@ export default function EmployeePage() {
                   <td className="border p-2">{emp.email}</td>
                   <td className="border p-2">{emp.phone}</td>
                   <td className="border p-2">{emp.salary?.toFixed(2)}</td>
+
                   <td className="border p-2 text-center">
                     {emp.image ? (
                       <>
@@ -279,17 +312,32 @@ export default function EmployeePage() {
                       <span className="text-gray-400 text-sm">No Image</span>
                     )}
                   </td>
+
                   <td className="border p-2">
                     <button
                       onClick={() => handleChangeStatus(emp.id!, emp.status === 1 ? 0 : 1)}
-                      className={`text-white px-2 py-1 rounded ${emp.status === 1 ? 'bg-green-500' : 'bg-red-500'}`}
+                      className={`text-white px-2 py-1 rounded ${
+                        emp.status === 1 ? "bg-green-500" : "bg-red-500"
+                      }`}
                     >
-                      {emp.status === 1 ? 'Active' : 'Inactive'}
+                      {emp.status === 1 ? "Active" : "Inactive"}
                     </button>
                   </td>
+
                   <td className="border p-2 flex gap-2">
-                    <button onClick={() => handleEdit(emp)} className="bg-yellow-500 text-white px-2 py-1 rounded">Edit</button>
-                    <button onClick={() => handleDelete(emp.id!)} className="bg-red-600 text-white px-2 py-1 rounded">Delete</button>
+                    <button
+                      onClick={() => handleEdit(emp)}
+                      className="bg-yellow-500 text-white px-2 py-1 rounded"
+                    >
+                      Edit
+                    </button>
+
+                    <button
+                      onClick={() => handleDelete(emp.id!)}
+                      className="bg-red-600 text-white px-2 py-1 rounded"
+                    >
+                      Delete
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -320,34 +368,74 @@ export default function EmployeePage() {
           </div>
         </>
       ) : (
-        /* FORM VIEW */
-        <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4 mb-6 bg-white p-4 rounded shadow">
-          <h2 className="col-span-2 text-lg font-semibold mb-2">{editingId ? "Edit Employee" : "Add Employee"}</h2>
+        /* ---------------- FORM VIEW ---------------- */
+        <form
+          onSubmit={handleSubmit}
+          className="grid grid-cols-2 gap-4 mb-6 bg-white p-4 rounded shadow"
+        >
+          <h2 className="col-span-2 text-lg font-semibold mb-2">
+            {editingId ? "Edit Employee" : "Add Employee"}
+          </h2>
 
           {/* Role */}
-          <select name="role_id" value={form.role_id || ""} onChange={handleChange} className="border p-2 rounded" required>
+          <select
+            name="role_id"
+            value={form.role_id || ""}
+            onChange={handleChange}
+            className="border p-2 rounded"
+            required
+          >
             <option value="">-- Select Role --</option>
-            {roles.map((role) => <option key={role.id} value={role.id}>{role.name}</option>)}
+            {roles.map((role) => (
+              <option key={role.id} value={role.id}>{role.name}</option>
+            ))}
           </select>
 
           {/* Country */}
-          <select name="country_id" value={form.country_id || ""} onChange={handleChange} className="border p-2 rounded" required>
+          <select
+            name="country_id"
+            value={form.country_id || ""}
+            onChange={handleChange}
+            className="border p-2 rounded"
+            required
+          >
             <option value="">-- Select Country --</option>
-            {countries.map((country) => <option key={country.id} value={country.id}>{country.name}</option>)}
+            {countries.map((country) => (
+              <option key={country.id} value={country.id}>{country.name}</option>
+            ))}
           </select>
 
           {/* State */}
-          <select name="state_id" value={form.state_id || ""} onChange={handleChange} className="border p-2 rounded" required disabled={!states.length}>
+          <select
+            name="state_id"
+            value={form.state_id || ""}
+            onChange={handleChange}
+            className="border p-2 rounded"
+            disabled={!states.length}
+            required
+          >
             <option value="">-- Select State --</option>
-            {states.map((state) => <option key={state.id} value={state.id}>{state.name}</option>)}
+            {states.map((state) => (
+              <option key={state.id} value={state.id}>{state.name}</option>
+            ))}
           </select>
 
           {/* City */}
-          <select name="city_id" value={form.city_id || ""} onChange={handleChange} className="border p-2 rounded" required disabled={!cities.length}>
+          <select
+            name="city_id"
+            value={form.city_id || ""}
+            onChange={handleChange}
+            className="border p-2 rounded"
+            disabled={!cities.length}
+            required
+          >
             <option value="">-- Select City --</option>
-            {cities.map((city) => <option key={city.id} value={city.id}>{city.name}</option>)}
+            {cities.map((city) => (
+              <option key={city.id} value={city.id}>{city.name}</option>
+            ))}
           </select>
 
+          {/* Inputs */}
           <input name="name" placeholder="Name" value={form.name} onChange={handleChange} className="border p-2 rounded" required />
           <input name="email" placeholder="Email" value={form.email} onChange={handleChange} className="border p-2 rounded" required />
           <input name="phone" placeholder="Phone" value={form.phone || ""} onChange={handleChange} className="border p-2 rounded" />
@@ -356,8 +444,8 @@ export default function EmployeePage() {
 
           {/* Image */}
           <div className="flex flex-col">
-            <label htmlFor="image" className="font-medium mb-1">Employee Image</label>
-            <input id="image" name="image" type="file" onChange={handleImageChange} className="border p-2 rounded" accept="image/*" />
+            <label className="font-medium mb-1">Employee Image</label>
+            <input type="file" onChange={handleImageChange} accept="image/*" className="border p-2 rounded" />
           </div>
 
           {!editingId && (
@@ -366,8 +454,8 @@ export default function EmployeePage() {
 
           {/* Status */}
           <div className="flex flex-col">
-            <label htmlFor="status" className="font-medium mb-1">Status</label>
-            <select id="status" name="status" value={form.status ?? ""} onChange={handleStatusChange} className="border p-2 rounded" required>
+            <label className="font-medium mb-1">Status</label>
+            <select name="status" value={form.status ?? ""} onChange={handleStatusChange} className="border p-2 rounded" required>
               <option value="">-- Select Status --</option>
               <option value="1">Active</option>
               <option value="0">Inactive</option>
@@ -375,8 +463,12 @@ export default function EmployeePage() {
           </div>
 
           <div className="col-span-2 flex justify-between">
-            <button type="submit" className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700">{editingId ? "Update Employee" : "Add Employee"}</button>
-            <button type="button" onClick={() => setView("list")} className="bg-gray-400 text-white py-2 px-4 rounded hover:bg-gray-500">Cancel</button>
+            <button type="submit" className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700">
+              {editingId ? "Update Employee" : "Add Employee"}
+            </button>
+            <button onClick={() => setView("list")} type="button" className="bg-gray-400 text-white py-2 px-4 rounded hover:bg-gray-500">
+              Cancel
+            </button>
           </div>
         </form>
       )}
