@@ -6,6 +6,12 @@ export interface Role {
   name: string;
 }
 
+export interface EmployeeRole {
+  id: number;
+  name: string;
+  totalEmployee?:number;
+}
+
 export interface Country {
   id: number;
   name: string;
@@ -64,8 +70,8 @@ export const apiFetch = async (url: string, options: FetchOptions = {}) => {
     body: isFormData
       ? options.body
       : options.body
-      ? JSON.stringify(options.body)
-      : undefined,
+        ? JSON.stringify(options.body)
+        : undefined,
   });
 
   // if (!res.ok) {
@@ -77,6 +83,7 @@ export const apiFetch = async (url: string, options: FetchOptions = {}) => {
 
 // ---------- Common Data Fetchers ----------
 export const fetchCountries = () => apiFetch(`${API_BASE}/countries`);
+export const fetchEmployeeRole = () => apiFetch(`${API_BASE}/roles/get-employee-count-by-role`);
 
 export const fetchStates = (countryId: number) =>
   apiFetch(`${API_BASE}/states/state-list`, {

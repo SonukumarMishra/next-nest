@@ -20,6 +20,18 @@ export class RoleService {
   async findAllSimple() {
      return this.roleRepository.find();
    }
+async getEmployeeCountByRole() {
+  return this.roleRepository
+    .createQueryBuilder("r")
+    .leftJoin("employee", "e", "e.role_id = r.id")
+    .select("r.id", "id")
+    .addSelect("r.name", "name")
+    .addSelect("COUNT(e.id)", "totalEmployee")
+    .groupBy("r.id")
+    .addGroupBy("r.name")
+    .getRawMany();
+}
+   
 
   async findAll(dto: { page: number; pageSize: number; search?: string }) {
   const { page, pageSize, search } = dto;

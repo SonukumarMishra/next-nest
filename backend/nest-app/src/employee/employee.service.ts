@@ -100,8 +100,8 @@ export class EmployeeService {
   }
 
 
-async findAll(dto: { page: number; pageSize: number; search?: string; countryId?: number,stateId?:number,cityId?:number }) {
-  const { page, pageSize, search, countryId,stateId,cityId } = dto;
+async findAll(dto: { page: number; pageSize: number; search?: string; countryId?: number,stateId?:number,cityId?:number,roleId?:number }) {
+  const { page, pageSize, search, countryId,stateId,cityId,roleId } = dto;
   const skip = (page - 1) * pageSize;
 
   const where: any = {};
@@ -119,8 +119,11 @@ async findAll(dto: { page: number; pageSize: number; search?: string; countryId?
   if (stateId) {
     where.state = { id: stateId };
   }
-    if (cityId) {
+if (cityId) {
     where.city = { id: cityId };
+  }
+  if (roleId) {
+    where.role = { id: roleId };
   }
   const [data, total] = await this.emoloyeeRepository.findAndCount({
     where,

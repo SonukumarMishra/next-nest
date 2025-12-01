@@ -5,22 +5,28 @@ import { UpdateRoleDto } from './dto/update-role.dto';
 
 @Controller('roles')
 export class RoleController {
-  constructor(private readonly roleService: RoleService) {}
+  constructor(private readonly roleService: RoleService) { }
 
   @Post()
   create(@Body() createRoleDto: CreateRoleDto) {
     return this.roleService.create(createRoleDto);
   }
 
-   @Get()
-   findAll() {
-     return this.roleService.findAllSimple();
-   }
+  @Get()
+  findAll() {
+    return this.roleService.findAllSimple();
+  }
 
-@Post('list')
-roleList(@Body() dto: { page: number; pageSize: number; search?: string }) {
-  return this.roleService.findAll(dto);
-}
+  @Get('get-employee-count-by-role')
+  getEmployeeCountByRole() {
+    return this.roleService.getEmployeeCountByRole();
+  }
+
+
+  @Post('list')
+  roleList(@Body() dto: { page: number; pageSize: number; search?: string }) {
+    return this.roleService.findAll(dto);
+  }
 
   @Get(':id')
   findOne(@Param('id') id: string) {

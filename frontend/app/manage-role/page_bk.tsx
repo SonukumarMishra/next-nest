@@ -16,7 +16,7 @@ export default function RolePage() {
   const [search, setSearch] = useState("");
 
   const [page, setPage] = useState(1);
-  const pageSize = 10;
+  const pageSize = 1;
   const [total, setTotal] = useState(0);
 
   useEffect(() => {
@@ -99,7 +99,7 @@ export default function RolePage() {
   const totalPages = Math.ceil(total / pageSize);
 
   return (
-    <div className="p-8 max-w-6xl mx-auto border">
+    <div className="p-8 max-w-6xl mx-auto">
       <h1 className="text-2xl font-bold mb-6">Role Management</h1>
 
       {view === "list" ? (

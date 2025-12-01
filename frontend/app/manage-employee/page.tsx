@@ -30,6 +30,7 @@ export default function EmployeePage() {
 
   // FILTER STATES
   const [countryFilter, setCountryFilter] = useState<number | undefined>(undefined);
+  const [roleFilter, setRoleFilter] = useState<number | undefined>(undefined);
   const [stateFilter, setStateFilter] = useState<number | undefined>(undefined);
   const [cityFilter, setCityFilter] = useState<number | undefined>(undefined);
 
@@ -49,7 +50,7 @@ export default function EmployeePage() {
 
   useEffect(() => {
     fetchEmployees();
-  }, [page, pageSize, search, countryFilter, stateFilter, cityFilter]);
+  }, [page, pageSize, search, countryFilter, stateFilter, cityFilter, roleFilter]);
 
   const loadInitialData = async () => {
     const [roleRes, countryRes] = await Promise.all([
@@ -73,6 +74,7 @@ export default function EmployeePage() {
         countryId: countryFilter,
         stateId: stateFilter,
         cityId: cityFilter,
+        roleId:roleFilter
       },
     });
 
@@ -200,7 +202,10 @@ export default function EmployeePage() {
         <>
           {/* ------- FILTERS ------- */}
           <div className="flex gap-4 mb-4">
-
+<select value={roleFilter || ""}  onChange={(e) => { setRoleFilter(Number(e.target.value) || undefined); setPage(1); }} className="border p-2 rounded w-1/4" >
+              <option value="">-- Select Role --</option>
+              {roles.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
+            </select>   
             {/* COUNTRY FILTER */}
             <select value={countryFilter || ""} onChange={async (e) => { const value = Number(e.target.value) || undefined;
                 setCountryFilter(value);
