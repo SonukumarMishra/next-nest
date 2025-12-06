@@ -1,8 +1,9 @@
 import { City } from 'src/cities/entities/city.entity';
 import { Country } from 'src/countries/entities/country.entity';
+import { CustomerAddress } from 'src/customer-addresses/entities/customer-address.entity';
 import { Role } from 'src/role/entities/role.entity';
 import { State } from 'src/states/entities/state.entity';
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, JoinColumn, ManyToOne } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, JoinColumn, ManyToOne, OneToMany } from 'typeorm';
 
 @Entity('employee')
 export class Employee {
@@ -90,4 +91,7 @@ export class Employee {
 
     @Column({ nullable: true })
     registrationDay: string;
+
+    @OneToMany(() => CustomerAddress, (customerAddress) => customerAddress.customer_id )
+    customerAddresses: CustomerAddress[];
 }

@@ -47,7 +47,13 @@ export default function Com({}) {
             onClick={() => router.push("/manage-employee")}
             className="text-white px-4 py-2 rounded"
           >
-            Manage Employee
+          Manage Employee
+          </button>
+          <button
+            onClick={() => router.push("/manage-customers")}
+            className="text-white px-4 py-2 rounded"
+          >
+          Manage Customers
           </button>
           <button
             onClick={() => router.push("/products/add")}

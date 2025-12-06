@@ -1,3 +1,4 @@
+import { CustomerAddress } from "src/customer-addresses/entities/customer-address.entity";
 import { Employee } from "src/employee/entities/employee.entity";
 import { State } from "src/states/entities/state.entity";
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
@@ -21,4 +22,7 @@ export class Country {
 
     @OneToMany(() => Employee, (employee) => employee.country)
     employees: Employee[];
+
+    @OneToMany(() => CustomerAddress, (customerAddress) => customerAddress.country)
+    customerAddresses: CustomerAddress[];
 }

@@ -8,6 +8,8 @@ import { RoleModule } from './role/role.module';
 import { CountriesModule } from './countries/countries.module';
 import { StatesModule } from './states/states.module';
 import { CitiesModule } from './cities/cities.module';
+import { CustomerModule } from './customer/customer.module';
+import { CustomerAddressesModule } from './customer-addresses/customer-addresses.module';
   
 @Module({
   imports: [
@@ -20,7 +22,8 @@ import { CitiesModule } from './cities/cities.module';
       database: 'login_registration',
       autoLoadEntities: true,
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
-      synchronize: true, // dev only
+      synchronize: false, // dev only
+
     }),
     EmployeeModule,
     ProductModule,
@@ -30,6 +33,8 @@ import { CitiesModule } from './cities/cities.module';
     CountriesModule,
     StatesModule,
     CitiesModule,
+    CustomerAddressesModule,
+    CustomerModule,
   ],
 })
 export class AppModule {}
